@@ -31,6 +31,15 @@ RE_INSERT_VALUES = re.compile(
     r"(\s*(?:ON DUPLICATE.*)?);?\s*\Z",
     re.IGNORECASE | re.DOTALL)
 
+def convert_to_str(var):
+    if isinstance(var,tuple) or isinstance(var, list):
+        return tuple(convert_to_str(item) for item in var)
+    elif isinstance(var,dict):
+        return {convert_to_str(key):convert_to_str(value) for key,value in var.items()}
+    elif isinstance(var,bytes):
+        return var.decode('utf-8')
+    else:
+        return var
 
 class BaseCursor(object):
     """A base for Cursor classes. Useful attributes:
@@ -444,6 +453,8 @@ class CursorStoreResultMixIn(object):
         else:
             result = self._rows
         self.rownumber = len(self._rows)
+        if not PY2:
+            result = convert_to_str(result)
         return result
 
     def scroll(self, value, mode='relative'):
